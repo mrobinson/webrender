@@ -21,6 +21,7 @@ pub trait MatrixHelpers<Src, Dst> {
     fn inverse_project(&self, target: &TypedPoint2D<f32, Dst>) -> Option<TypedPoint2D<f32, Src>>;
     fn inverse_rect_footprint(&self, rect: &TypedRect<f32, Dst>) -> TypedRect<f32, Src>;
     fn transform_kind(&self) -> TransformedRectKind;
+    fn is_simple_translation(&self) -> bool;
 }
 
 impl<Src, Dst> MatrixHelpers<Src, Dst> for TypedTransform3D<f32, Src, Dst> {
@@ -92,6 +93,17 @@ impl<Src, Dst> MatrixHelpers<Src, Dst> for TypedTransform3D<f32, Src, Dst> {
         } else {
             TransformedRectKind::Complex
         }
+    }
+
+    fn is_simple_translation(&self) -> bool {
+        if self.m11 != 1. || self.m22 != 1. || self.m33 != 1. {
+            return false;
+        }
+        self.m12.abs() < NEARLY_ZERO || self.m13.abs() < NEARLY_ZERO ||
+            self.m14.abs() < NEARLY_ZERO || self.m21.abs() < NEARLY_ZERO ||
+            self.m23.abs() < NEARLY_ZERO || self.m24.abs() < NEARLY_ZERO ||
+            self.m31.abs() < NEARLY_ZERO || self.m32.abs() < NEARLY_ZERO ||
+            self.m34.abs() < NEARLY_ZERO
     }
 }
 

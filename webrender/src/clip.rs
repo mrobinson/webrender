@@ -119,6 +119,7 @@ impl ClipSource {
 #[derive(Debug)]
 pub struct ClipSources {
     pub clips: Vec<(ClipSource, GpuCacheHandle)>,
+    pub is_simple_rectangle: bool,
     pub local_inner_rect: LayerRect,
     pub local_outer_rect: Option<LayerRect>
 }
@@ -127,6 +128,11 @@ impl ClipSources {
     pub fn new(clips: Vec<ClipSource>) -> ClipSources {
         let (local_inner_rect, local_outer_rect) = Self::calculate_inner_and_outer_rects(&clips);
 
+        let is_simple_rectangle = clips.len() == 1 && match clips.first() {
+            Some(&ClipSource::Rectangle(..)) => true,
+            _ => false,
+        };
+
         let clips = clips
             .into_iter()
             .map(|clip| (clip, GpuCacheHandle::new()))
@@ -134,6 +140,7 @@ impl ClipSources {
 
         ClipSources {
             clips,
+            is_simple_rectangle,
             local_inner_rect,
             local_outer_rect,
         }

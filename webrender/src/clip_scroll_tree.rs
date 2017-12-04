@@ -79,6 +79,9 @@ pub struct TransformUpdateState {
     /// coordinate systems which are relatively axis aligned.
     pub current_coordinate_system_id: CoordinateSystemId,
     pub next_coordinate_system_id: CoordinateSystemId,
+
+    /// Offset from the coordinate system that started this compatible coordinate system.
+    pub compatible_coordinate_system_offset: LayerVector2D,
 }
 
 impl ClipScrollTree {
@@ -364,6 +367,7 @@ impl ClipScrollTree {
             combined_inner_clip_bounds: DeviceIntRect::max_rect(),
             current_coordinate_system_id: CoordinateSystemId(0),
             next_coordinate_system_id: CoordinateSystemId(0).next(),
+            compatible_coordinate_system_offset: LayerVector2D::zero(),
         };
         self.update_node(
             root_reference_frame_id,

@@ -122,9 +122,12 @@ pub struct ClipScrollNode {
     /// The axis-aligned coordinate system id of this node.
     pub coordinate_system_id: CoordinateSystemId,
 
+    pub compatible_coordinate_system_offset: LayerVector2D,
+
     /// A linear ID / index of this clip-scroll node. Used as a reference to
     /// pass to shaders, to allow them to fetch a given clip-scroll node.
     pub node_data_index: ClipScrollNodeIndex,
+
 }
 
 impl ClipScrollNode {
@@ -146,6 +149,7 @@ impl ClipScrollNode {
             clip_chain_node: None,
             combined_clip_outer_bounds: DeviceIntRect::max_rect(),
             coordinate_system_id: CoordinateSystemId(0),
+            compatible_coordinate_system_offset: LayerVector2D::zero(),
             node_data_index: ClipScrollNodeIndex(0),
         }
     }
@@ -423,6 +427,15 @@ impl ClipScrollNode {
         state.combined_inner_clip_bounds = combined_inner_screen_rect;
         self.combined_clip_outer_bounds = combined_outer_screen_rect;
 
+        let local_clip_info = if clip_sources.is_simple_rectangle {
+            Some(LocalClipRectInfo {
+                compatible_coordinate_system_offset: state.compatible_coordinate_system_offset,
+                local_rect: clip_sources.local_outer_rect.unwwrap(),
+            })
+        } else {
+            None
+        }
+
         self.clip_chain_node = Some(Rc::new(ClipChainNode {
             work_item: ClipWorkItem {
                 scroll_node_data_index: self.node_data_index,
@@ -473,6 +486,16 @@ impl ClipScrollNode {
             self.world_viewport_transform
         };
 
+
+        let reference_frame_relative_scroll_offset = match self.node_type {
+            NodeType::ReferenceFrame(_) => LayerVector2D::zero(),
+            NodeType::Clip(_) | NodeType::ScrollFrame(_) => state.parent_accumulated_scroll_offset,
+            NodeType::StickyFrame(ref sticky_info) =>
+                    state.parent_accumulated_scroll_offset + sticky_info.current_offset,
+        };
+        self.compatible_coordinate_system_offset =
+            state.compatible_coordinate_system_offset + reference_frame_relative_scroll_offset;
+
         match self.node_type {
             NodeType::StickyFrame(ref mut info) => info.current_offset = sticky_offset,
             _ => {},
@@ -500,12 +523,21 @@ impl ClipScrollNode {
         ).pre_mul(&source_transform)
          .pre_mul(&info.source_perspective);
 
-        if !info.resolved_transform.preserves_2d_axis_alignment() ||
-           info.resolved_transform.has_perspective_component() {
+        if !info.resolved_transform.is_simple_translation() {
             state.current_coordinate_system_id = state.next_coordinate_system_id;
             state.next_coordinate_system_id = state.next_coordinate_system_id.next();
+            state.compatible_coordinate_system_offset = LayerVector2D::zero();
+            self.compatible_coordinate_system_offset = LayerVector2D::zero();
             self.coordinate_system_id = state.current_coordinate_system_id;
+        } else {
+            let offset = LayerVector2D::new(
+                info.resolved_transform.m41,
+                info.resolved_transform.m42) + state.parent_accumulated_scroll_offset;
+
+            state.compatible_coordinate_system_offset = offset;
+            self.compatible_coordinate_system_offset = offset;
         }
+
 
         // The transformation for this viewport in world coordinates is the transformation for
         // our parent reference frame, plus any accumulated scrolling offsets from nodes
