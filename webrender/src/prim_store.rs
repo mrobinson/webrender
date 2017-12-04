@@ -1526,11 +1526,26 @@ impl PrimitiveStore {
 
     fn convert_clip_chain_to_clip_vector(
         &mut self,
+        prim_coordinate_system_id: CoordinateSystemId,
         clip_chain: ClipChain,
         extra_clip: ClipChain,
         combined_outer_rect: &DeviceIntRect,
         combined_inner_rect: &mut DeviceIntRect,
     ) -> Vec<ClipWorkItem> {
+
+        // XXX: Need to calculate this in a way that we can distinguish between empty rect and no
+        // local clips.
+        let mut local_clip_rect = None;
+        ClipChainNodeIter { current: clip_chain }.for_each(|node| }
+            if node.work_item.coordinate_system_id == prim_coordinate_system_id {
+                match (node.local_clip_rect, local_clip_rect) {
+                    (Some(node_rect), Some(local_clip_rect))
+
+                }
+            }
+        })
+
+
         // Filter out all the clip instances that don't contribute to the result.
         ClipChainNodeIter { current: extra_clip }
             .chain(ClipChainNodeIter { current: clip_chain })
@@ -1604,6 +1619,7 @@ impl PrimitiveStore {
                         clip_sources: metadata.clip_sources.weak(),
                         coordinate_system_id: prim_coordinate_system_id,
                     },
+                    local_clip_rect: None,
                     screen_inner_rect,
                     combined_outer_screen_rect:
                         combined_outer_rect.unwrap_or_else(DeviceIntRect::zero),

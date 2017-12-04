@@ -427,14 +427,12 @@ impl ClipScrollNode {
         state.combined_inner_clip_bounds = combined_inner_screen_rect;
         self.combined_clip_outer_bounds = combined_outer_screen_rect;
 
-        let local_clip_info = if clip_sources.is_simple_rectangle {
-            Some(LocalClipRectInfo {
-                compatible_coordinate_system_offset: state.compatible_coordinate_system_offset,
-                local_rect: clip_sources.local_outer_rect.unwwrap(),
-            })
+        let local_clip_rect = if clip_sources.is_simple_rectangle {
+            let local_rect = clip_sources.local_outer_rect.unwrap();
+            Some(local_rect.translate(&-state.compatible_coordinate_system_offset))
         } else {
             None
-        }
+        };
 
         self.clip_chain_node = Some(Rc::new(ClipChainNode {
             work_item: ClipWorkItem {
@@ -442,6 +440,7 @@ impl ClipScrollNode {
                 clip_sources: clip_sources_handle.weak(),
                 coordinate_system_id: state.current_coordinate_system_id,
             },
+            local_clip_rect,
             screen_inner_rect,
             combined_outer_screen_rect,
             combined_inner_screen_rect,
