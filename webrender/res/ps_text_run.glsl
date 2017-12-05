@@ -22,14 +22,14 @@ flat varying vec4 vUvBorder;
 VertexInfo write_text_vertex(vec2 local_pos,
                              RectWithSize local_clip_rect,
                              float z,
-                             Layer layer,
+                             ClipScrollNode scroll_node,
                              PictureTask task,
                              RectWithSize snap_rect) {
-    // Clamp to the two local clip rects.
-    vec2 clamped_local_pos = clamp_rect(clamp_rect(local_pos, local_clip_rect), layer.local_clip_rect);
+    // Clamp to the local clip rect.
+    vec2 clamped_local_pos = clamp_rect(local_pos, local_clip_rect);
 
     // Transform the current vertex to world space.
-    vec4 world_pos = layer.transform * vec4(clamped_local_pos, 0.0, 1.0);
+    vec4 world_pos = scroll_node.transform * vec4(clamped_local_pos, 0.0, 1.0);
 
     // Convert the world positions to device pixel space.
     vec2 device_pos = world_pos.xy / world_pos.w * uDevicePixelRatio;
@@ -41,12 +41,12 @@ VertexInfo write_text_vertex(vec2 local_pos,
 
 #ifdef WR_FEATURE_GLYPH_TRANSFORM
     // For transformed subpixels, we just need to align the glyph origin to a device pixel.
-    // Only check the layer transform's translation since the scales and axes match.
-    vec2 world_snap_p0 = snap_rect.p0 + layer.transform[3].xy * uDevicePixelRatio;
+    // Only check the scroll node transform's translation since the scales and axes match.
+    vec2 world_snap_p0 = snap_rect.p0 + scroll_node.transform[3].xy * uDevicePixelRatio;
     final_pos += floor(world_snap_p0 + 0.5) - world_snap_p0;
 #elif !defined(WR_FEATURE_TRANSFORM)
-    // Compute the snapping offset only if the layer transform is axis-aligned.
-    final_pos += compute_snap_offset(clamped_local_pos, layer, snap_rect);
+    // Compute the snapping offset only if the scroll node transform is axis-aligned.
+    final_pos += compute_snap_offset(clamped_local_pos, scroll_node, snap_rect);
 #endif
 
     gl_Position = uTransform * vec4(final_pos, z, 1.0);
@@ -69,7 +69,7 @@ void main(void) {
 
 #ifdef WR_FEATURE_GLYPH_TRANSFORM
     // Transform from local space to glyph space.
-    mat2 transform = mat2(prim.layer.transform) * uDevicePixelRatio;
+    mat2 transform = mat2(prim.scroll_node.transform) * uDevicePixelRatio;
 
     // Compute the glyph rect in glyph space.
     RectWithSize glyph_rect = RectWithSize(res.offset + transform * (text.offset + glyph.offset),
@@ -93,7 +93,7 @@ void main(void) {
     VertexInfo vi = write_text_vertex(local_pos,
                                       prim.local_clip_rect,
                                       prim.z,
-                                      prim.layer,
+                                      prim.scroll_node,
                                       prim.task,
                                       glyph_rect);
 

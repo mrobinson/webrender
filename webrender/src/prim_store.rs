@@ -1606,7 +1606,7 @@ impl PrimitiveStore {
                         clip_sources: metadata.clip_sources.weak(),
                         coordinate_system_id: prim_coordinate_system_id,
                     },
-                    local_clip_rect: None,
+                    local_clip_rect: LayerRect::zero(), // This should be unused.
                     screen_inner_rect,
                     combined_outer_screen_rect:
                         combined_outer_rect.unwrap_or_else(DeviceIntRect::zero),
@@ -2027,16 +2027,16 @@ fn get_local_clip_rect_for_nodes(
             }
 
             Some(match combined_local_clip_rect {
-                None => *node.local_clip_rect,
                 Some(combined_rect) =>
                     combined_rect.intersection(&node.local_clip_rect).unwrap_or_else(LayerRect::zero),
+                None => node.local_clip_rect,
             })
         }
     );
 
     match local_rect {
         Some(local_rect) =>
-            Some(scroll_node.compatible_coordinate_system_offset.unapply(&local_rect)),
+            Some(scroll_node.coordinate_system_relative_transform.unapply(&local_rect)),
         None => None,
     }
 }

@@ -82,7 +82,7 @@ pub struct TransformUpdateState {
     pub next_coordinate_system_id: CoordinateSystemId,
 
     /// Offset from the coordinate system that started this compatible coordinate system.
-    pub compatible_coordinate_system_offset: TransformOrOffset,
+    pub coordinate_system_relative_transform: TransformOrOffset,
 }
 
 impl ClipScrollTree {
@@ -368,7 +368,7 @@ impl ClipScrollTree {
             combined_inner_clip_bounds: DeviceIntRect::max_rect(),
             current_coordinate_system_id: CoordinateSystemId(0),
             next_coordinate_system_id: CoordinateSystemId(0).next(),
-            compatible_coordinate_system_offset: TransformOrOffset::zero(),
+            coordinate_system_relative_transform: TransformOrOffset::zero(),
         };
         self.update_node(
             root_reference_frame_id,
@@ -414,12 +414,13 @@ impl ClipScrollTree {
                 scene_properties,
             );
 
-            node.push_gpu_node_data(&state, gpu_node_data);
+            node.push_gpu_node_data(gpu_node_data);
 
-            if !node.children.is_empty() {
-                node.prepare_state_for_children(&mut state, gpu_node_data);
+            if node.children.is_empty() || node.combined_clip_outer_bounds.is_empty() {
+                return
             }
 
+            node.prepare_state_for_children(&mut state);
             node.children.clone()
         };
 
