@@ -7,6 +7,7 @@ use api::{LayerToWorldTransform, LayerVector2D, PipelineId, ScrollClamping, Scro
 use api::{PropertyBinding, LayoutTransform, ScrollLayerState, ScrollLocation, WorldPoint};
 use clip::ClipStore;
 use clip_scroll_node::{ClipScrollNode, NodeType, ScrollingState, StickyFrameInfo};
+use clip_scroll_node::TransformOrOffset;
 use gpu_cache::GpuCache;
 use gpu_types::{ClipScrollNodeIndex, ClipScrollNodeData};
 use internal_types::{FastHashMap, FastHashSet};
@@ -81,7 +82,7 @@ pub struct TransformUpdateState {
     pub next_coordinate_system_id: CoordinateSystemId,
 
     /// Offset from the coordinate system that started this compatible coordinate system.
-    pub compatible_coordinate_system_offset: LayerVector2D,
+    pub compatible_coordinate_system_offset: TransformOrOffset,
 }
 
 impl ClipScrollTree {
@@ -367,7 +368,7 @@ impl ClipScrollTree {
             combined_inner_clip_bounds: DeviceIntRect::max_rect(),
             current_coordinate_system_id: CoordinateSystemId(0),
             next_coordinate_system_id: CoordinateSystemId(0).next(),
-            compatible_coordinate_system_offset: LayerVector2D::zero(),
+            compatible_coordinate_system_offset: TransformOrOffset::zero(),
         };
         self.update_node(
             root_reference_frame_id,

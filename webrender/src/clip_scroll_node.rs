@@ -79,6 +79,36 @@ impl NodeType {
     }
 }
 
+#[derive(Debug, Clone)]
+pub enum TransformOrOffset {
+    Offset(LayerVector2D),
+    //Transformation(LayerToScrollTransform, LayerToScrollTransform),
+}
+
+impl TransformOrOffset {
+    pub fn zero() -> TransformOrOffset {
+        TransformOrOffset::Offset(LayerVector2D::zero())
+    }
+
+    fn apply(&self, rect: &LayerRect) -> LayerRect {
+        match *self {
+            TransformOrOffset::Offset(offset) => rect.translate(&offset),
+        }
+    }
+
+    pub fn unapply(&self, rect: &LayerRect) -> LayerRect {
+        match *self {
+            TransformOrOffset::Offset(offset) => rect.translate(&-offset),
+        }
+    }
+
+    fn offset(&self, new_offset: LayerVector2D) -> TransformOrOffset {
+        match *self {
+            TransformOrOffset::Offset(offset) => TransformOrOffset::Offset(offset + new_offset),
+        }
+    }
+}
+
 /// Contains information common among all types of ClipScrollTree nodes.
 #[derive(Debug)]
 pub struct ClipScrollNode {
@@ -122,7 +152,7 @@ pub struct ClipScrollNode {
     /// The axis-aligned coordinate system id of this node.
     pub coordinate_system_id: CoordinateSystemId,
 
-    pub compatible_coordinate_system_offset: LayerVector2D,
+    pub compatible_coordinate_system_offset: TransformOrOffset,
 
     /// A linear ID / index of this clip-scroll node. Used as a reference to
     /// pass to shaders, to allow them to fetch a given clip-scroll node.
@@ -149,7 +179,7 @@ impl ClipScrollNode {
             clip_chain_node: None,
             combined_clip_outer_bounds: DeviceIntRect::max_rect(),
             coordinate_system_id: CoordinateSystemId(0),
-            compatible_coordinate_system_offset: LayerVector2D::zero(),
+            compatible_coordinate_system_offset: TransformOrOffset::zero(),
             node_data_index: ClipScrollNodeIndex(0),
         }
     }
@@ -427,12 +457,9 @@ impl ClipScrollNode {
         state.combined_inner_clip_bounds = combined_inner_screen_rect;
         self.combined_clip_outer_bounds = combined_outer_screen_rect;
 
-        let local_clip_rect = if clip_sources.is_simple_rectangle {
-            let local_rect = clip_sources.local_outer_rect.unwrap();
-            Some(local_rect.translate(&-state.compatible_coordinate_system_offset))
-        } else {
-            None
-        };
+        //println!("\t|| clip chain node: {:?} {:?}", self.local_clip_rect,
+        //         self.local_clip_rect.translate(&self.compatible_coordinate_system_offset));
+        let local_clip_rect = self.compatible_coordinate_system_offset.apply(&self.local_clip_rect);
 
         self.clip_chain_node = Some(Rc::new(ClipChainNode {
             work_item: ClipWorkItem {
@@ -485,15 +512,11 @@ impl ClipScrollNode {
             self.world_viewport_transform
         };
 
-
-        let reference_frame_relative_scroll_offset = match self.node_type {
-            NodeType::ReferenceFrame(_) => LayerVector2D::zero(),
-            NodeType::Clip(_) | NodeType::ScrollFrame(_) => state.parent_accumulated_scroll_offset,
-            NodeType::StickyFrame(ref sticky_info) =>
-                    state.parent_accumulated_scroll_offset + sticky_info.current_offset,
-        };
+        let added_offset = state.parent_accumulated_scroll_offset + sticky_offset + scroll_offset;
         self.compatible_coordinate_system_offset =
-            state.compatible_coordinate_system_offset + reference_frame_relative_scroll_offset;
+            state.compatible_coordinate_system_offset.offset(added_offset);
+
+        //println!("\t++ node offset: {:?}", self.compatible_coordinate_system_offset);
 
         match self.node_type {
             NodeType::StickyFrame(ref mut info) => info.current_offset = sticky_offset,
@@ -525,16 +548,17 @@ impl ClipScrollNode {
         if !info.resolved_transform.is_simple_translation() {
             state.current_coordinate_system_id = state.next_coordinate_system_id;
             state.next_coordinate_system_id = state.next_coordinate_system_id.next();
-            state.compatible_coordinate_system_offset = LayerVector2D::zero();
-            self.compatible_coordinate_system_offset = LayerVector2D::zero();
+            state.compatible_coordinate_system_offset = TransformOrOffset::zero();
+            self.compatible_coordinate_system_offset = TransformOrOffset::zero();
             self.coordinate_system_id = state.current_coordinate_system_id;
         } else {
-            let offset = LayerVector2D::new(
+            let transform = TransformOrOffset::Offset(LayerVector2D::new(
                 info.resolved_transform.m41,
-                info.resolved_transform.m42) + state.parent_accumulated_scroll_offset;
+                info.resolved_transform.m42) + state.parent_accumulated_scroll_offset
+            );
 
-            state.compatible_coordinate_system_offset = offset;
-            self.compatible_coordinate_system_offset = offset;
+            state.compatible_coordinate_system_offset = transform.clone();
+            self.compatible_coordinate_system_offset = transform;
         }
 
 

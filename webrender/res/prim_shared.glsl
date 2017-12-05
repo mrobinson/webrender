@@ -587,7 +587,8 @@ VertexInfo write_vertex(RectWithSize instance_rect,
     vec2 local_pos = instance_rect.p0 + instance_rect.size * aPosition.xy;
 
     // Clamp to the two local clip rects.
-    vec2 clamped_local_pos = clamp_rect(clamp_rect(local_pos, local_clip_rect), layer.local_clip_rect);
+    //vec2 clamped_local_pos = clamp_rect(clamp_rect(local_pos, local_clip_rect), layer.local_clip_rect);
+    vec2 clamped_local_pos = clamp_rect(local_pos, local_clip_rect);
 
     /// Compute the snapping offset.
     vec2 snap_offset = compute_snap_offset(clamped_local_pos, layer, snap_rect);
@@ -637,8 +638,8 @@ VertexInfo write_transform_vertex(RectWithSize local_segment_rect,
                                   PictureTask task) {
     // Calculate a clip rect from local clip + layer clip.
     RectWithEndpoint clip_rect = to_rect_with_endpoint(local_clip_rect);
-    clip_rect.p0 = clamp_rect(clip_rect.p0, layer.local_clip_rect);
-    clip_rect.p1 = clamp_rect(clip_rect.p1, layer.local_clip_rect);
+    //clip_rect.p0 = clamp_rect(clip_rect.p0, layer.local_clip_rect);
+    //clip_rect.p1 = clamp_rect(clip_rect.p1, layer.local_clip_rect);
 
     // Calculate a clip rect from local_rect + local clip + layer clip.
     RectWithEndpoint segment_rect = to_rect_with_endpoint(local_segment_rect);
