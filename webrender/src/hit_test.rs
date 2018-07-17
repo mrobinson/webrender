@@ -340,10 +340,7 @@ fn get_regions_for_clip_node(
 ) -> Vec<HitTestRegion> {
     let handle = match node.handle.as_ref() {
         Some(handle) => handle,
-        None => {
-            warn!("Encountered an empty clip node unexpectedly.");
-            return Vec::new()
-        }
+        None => unreachable!("Tried to process an empty clip node"),
     };
 
     let clips = clip_store.get(handle).clips();

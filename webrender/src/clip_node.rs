@@ -54,10 +54,7 @@ impl ClipNode {
     ) {
         let (clip_sources, weak_handle) = match self.handle {
             Some(ref handle) => (clip_store.get_mut(handle), handle.weak()),
-            None => {
-                warn!("Tried to process an empty clip node");
-                return;
-            }
+            None => unreachable!("Tried to process an empty clip node"),
         };
         clip_sources.update(gpu_cache, resource_cache, device_pixel_scale);
 

@@ -519,6 +519,18 @@ impl<'a> DisplayListFlattener<'a> {
         clip_and_scroll_ids: &ClipAndScrollInfo,
         reference_frame_relative_offset: &LayoutVector2D,
     ) {
+        // We always add the clip node, even if we aren't going to add the iframe display item.
+        // Due to the way that ClipNodes are added to the ClipScrollTree, we might otherwise have
+        // an unused ClipId and therefore an empty ClipNode.
+        self.add_clip_node(
+            info.clip_id,
+            clip_and_scroll_ids.scroll_node_id,
+            ClipRegion::create_for_clip_node_with_local_clip(
+                &LocalClip::from(*item.clip_rect()),
+                reference_frame_relative_offset
+            ),
+        );
+
         let iframe_pipeline_id = info.pipeline_id;
         let pipeline = match self.scene.pipelines.get(&iframe_pipeline_id) {
             Some(pipeline) => pipeline,
@@ -529,15 +541,6 @@ impl<'a> DisplayListFlattener<'a> {
         };
 
         self.id_to_index_mapper.initialize_for_pipeline(pipeline);
-
-        self.add_clip_node(
-            info.clip_id,
-            clip_and_scroll_ids.scroll_node_id,
-            ClipRegion::create_for_clip_node_with_local_clip(
-                &LocalClip::from(*item.clip_rect()),
-                reference_frame_relative_offset
-            ),
-        );
 
         let bounds = item.rect();
         let origin = *reference_frame_relative_offset + bounds.origin.to_vector();
