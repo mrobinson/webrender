@@ -2329,14 +2329,14 @@ impl BatchBuilder {
                         let specific_resource_address = cache_item.uv_rect_handle.as_int(gpu_cache);
                         prim_header.specific_prim_address = gpu_cache.get_address(&ctx.globals.default_image_handle);
 
-                        let segment_local_clip_rect = prim_header.local_clip_rect.intersection(&segment.local_rect);
-                        if segment_local_clip_rect.is_none() {
-                            continue;
-                        }
+                        let segment_local_clip_rect = match prim_header.local_clip_rect.intersection(&segment.local_rect) {
+                            Some(rect) => rect,
+                            None => { continue; }
+                        };
 
                         let segment_prim_header = PrimitiveHeader {
                             local_rect: segment.local_rect,
-                            local_clip_rect: segment_local_clip_rect.unwrap(),
+                            local_clip_rect: segment_local_clip_rect,
                             specific_prim_address: prim_header.specific_prim_address,
                             transform_id: prim_header.transform_id,
                         };

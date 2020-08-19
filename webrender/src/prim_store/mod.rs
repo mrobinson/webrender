@@ -2194,7 +2194,7 @@ impl PrimitiveStore {
                         prim_instance.local_clip_rect
                     };
 
-                    if combined_local_clip_rect.size.is_empty_or_negative() {
+                    if combined_local_clip_rect.size.is_empty() {
                         debug_assert!(combined_local_clip_rect.size.width >= 0.0 &&
                             combined_local_clip_rect.size.height >= 0.0);
                         if prim_instance.is_chased() {
@@ -4352,7 +4352,7 @@ fn get_clipped_device_rect(
 ) -> Option<DeviceRect> {
     let unclipped_raster_rect = {
         let world_rect = *unclipped * Scale::new(1.0);
-        let raster_rect = world_rect * device_pixel_scale.inv();
+        let raster_rect = world_rect * device_pixel_scale.inverse();
 
         raster_rect.cast_unit()
     };

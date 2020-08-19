@@ -246,7 +246,7 @@ impl<Src, Dst> From<CoordinateSpaceMapping<Src, Dst>> for TransformKey {
             CoordinateSpaceMapping::Transform(ref m) => {
                 TransformKey::Transform {
                     m: MatrixKey {
-                        m: m.to_row_major_array(),
+                        m: m.to_array(),
                     },
                 }
             }
@@ -1032,7 +1032,7 @@ impl Tile {
     /// Print debug information about this tile to a tree printer.
     fn print(&self, pt: &mut dyn PrintTreePrinter) {
         pt.new_level(format!("Tile {:?}", self.id));
-        pt.add_item(format!("local_tile_rect: {}", self.local_tile_rect));
+        pt.add_item(format!("local_tile_rect: {:?}", self.local_tile_rect));
         pt.add_item(format!("fract_offset: {:?}", self.fract_offset));
         pt.add_item(format!("background_color: {:?}", self.background_color));
         pt.add_item(format!("invalidation_reason: {:?}", self.invalidation_reason));
@@ -3212,7 +3212,7 @@ impl TileCacheInstance {
         };
 
         // If the rect is invalid, no need to create dependencies.
-        if prim_rect.size.is_empty_or_negative() {
+        if prim_rect.size.is_empty() {
             return None;
         }
 
