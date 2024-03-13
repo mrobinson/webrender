@@ -1,0 +1,19 @@
+name: Sync from mozilla-central
+
+on:
+  workflow_dispatch:
+
+jobs:
+  sync:
+    name: Sync
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 1
+      - uses: actions/cache@v3
+        with:
+          path: _cache/upstream
+          key: upstream
+      - run: |
+          ./.github/sync/sync.sh _filtered
